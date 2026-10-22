@@ -1,0 +1,96 @@
+/* Brand cores from logos. --primary is swapped live by the review dock. */
+
+:root {
+  --primary: #15522f;
+
+  --cream: #fff9e0;
+  --paper: #fbf7ea;
+  --white: #fffdf6;
+  --black: #0a0a0a;
+  --maple: #c4a054;
+  --maple-light: #dcc188;
+
+  /* Derived from --primary so every concept follows the chosen color */
+  --p: var(--primary);
+  --p-deep: color-mix(in oklab, var(--primary) 74%, #050605);
+  --p-night: color-mix(in oklab, var(--primary) 34%, #070908);
+  --p-dusk: color-mix(in oklab, var(--primary) 46%, #0b0e0c);
+  --p-ink: color-mix(in oklab, var(--primary) 58%, #0d100e);
+  --p-soft: color-mix(in oklab, var(--primary) 9%, var(--paper));
+  --p-mist: color-mix(in oklab, var(--primary) 16%, var(--paper));
+
+  --font-display: "Cormorant Garamond", "Iowan Old Style", Georgia, serif;
+  --font-body: "Outfit", "Avenir Next", "Segoe UI", sans-serif;
+
+  --nav-h: 5.25rem;
+  --max: 76rem;
+  --r-sm: 10px;
+  --r-md: 16px;
+  --r-lg: 26px;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ——— Tones: any section can switch its palette with one class ——— */
+
+.tone-paper,
+.tone-cream,
+.tone-mist {
+  --s-bg: var(--paper);
+  --fg: var(--p-ink);
+  --muted: color-mix(in oklab, var(--p-ink) 72%, var(--paper));
+  --line: color-mix(in oklab, var(--p-ink) 12%, transparent);
+  --eyebrow: var(--p);
+  --card-bg: var(--white);
+  --card-line: color-mix(in oklab, var(--p-ink) 8%, transparent);
+  --card-shadow: 0 1px 2px rgba(20, 30, 20, 0.05), 0 18px 40px -22px rgba(20, 35, 25, 0.28);
+  --icon-bg: var(--p-mist);
+  --icon-fg: var(--p);
+  --btn-bg: var(--p);
+  --btn-fg: var(--cream);
+  --btn-hover: var(--p-deep);
+  --ghost: color-mix(in oklab, var(--p-ink) 30%, transparent);
+  --field-bg: var(--white);
+  --field-line: color-mix(in oklab, var(--p-ink) 16%, transparent);
+}
+
+.tone-cream {
+  --s-bg: var(--cream);
+}
+
+.tone-mist {
+  --s-bg: var(--p-soft);
+}
+
+.tone-primary,
+.tone-night,
+.tone-dusk,
+.tone-black {
+  --s-bg: var(--p-deep);
+  --fg: var(--cream);
+  --muted: rgba(255, 249, 224, 0.74);
+  --line: rgba(255, 249, 224, 0.13);
+  --eyebrow: var(--maple-light);
+  --card-bg: rgba(255, 249, 224, 0.05);
+  --card-line: rgba(255, 249, 224, 0.1);
+  --card-shadow: 0 24px 50px -28px rgba(0, 0, 0, 0.7);
+  --icon-bg: rgba(255, 249, 224, 0.08);
+  --icon-fg: var(--maple-light);
+  --btn-bg: var(--cream);
+  --btn-fg: var(--p-ink);
+  --btn-hover: #fff;
+  --ghost: rgba(255, 249, 224, 0.4);
+  --field-bg: rgba(255, 249, 224, 0.06);
+  --field-line: rgba(255, 249, 224, 0.2);
+}
+
+.tone-night {
+  --s-bg: var(--p-night);
+}
+
+.tone-dusk {
+  --s-bg: var(--p-dusk);
+}
+
+.tone-black {
+  --s-bg: #0c0d0c;
+}
