@@ -1410,6 +1410,30 @@ p {
   margin: 0;
 }
 
+/* Right-weighted heroes: type sits on the open side of the photo */
+.page-hero--right::before {
+  background:
+    linear-gradient(
+      270deg,
+      color-mix(in oklab, var(--night) 82%, transparent) 0%,
+      color-mix(in oklab, var(--night) 52%, transparent) 36%,
+      color-mix(in oklab, var(--night) 16%, transparent) 70%
+    ),
+    linear-gradient(0deg, var(--s-bg) 0%, transparent 45%);
+}
+
+.page-hero--right .page-hero__inner {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  padding-right: 5%;
+  text-align: right;
+}
+
+.page-hero--right .lede {
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.55);
+}
+
 /* ——— About ——— */
 
 .pillars {

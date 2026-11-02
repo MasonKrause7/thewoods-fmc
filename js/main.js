@@ -78,25 +78,47 @@ if (hero) initSlideshow(hero);
 
 const FB_PAGE = "https://www.facebook.com/100081895544129";
 
-/* Accepts a Facebook video link, an embed src, or a full <iframe> embed code */
-function facebookVideoUrl(input) {
-  const src = input.match(/src="([^"]+)"/)?.[1]?.replace(/&amp;/g, "&") || input.trim();
+/* Accepts a Facebook video link, an embed src, or a full <iframe> embed code.
+   A t= value in the embed (t=20) starts playback at that second. */
+function facebookInputUrl(input) {
+  const src = String(input).match(/src="([^"]+)"/)?.[1]?.replace(/&amp;/g, "&") || String(input).trim();
   try {
-    const url = new URL(src);
-    return url.pathname.includes("/plugins/video.php") ? url.searchParams.get("href") : url.href;
+    return new URL(src);
   } catch {
-    return src;
+    return null;
   }
 }
 
+function facebookVideoUrl(input) {
+  const url = facebookInputUrl(input);
+  if (!url) return String(input).trim();
+  return url.pathname.includes("/plugins/video.php") ? url.searchParams.get("href") : url.href;
+}
+
 function embedSrc(video) {
-  const params = new URLSearchParams({ href: facebookVideoUrl(video), show_text: "false", t: "0" });
+  const start = facebookInputUrl(video)?.searchParams.get("t");
+  const params = new URLSearchParams({
+    href: facebookVideoUrl(video),
+    show_text: "false",
+    t: start && /^\d+$/.test(start) ? start : "0",
+  });
   return `https://www.facebook.com/plugins/video.php?${params}`;
 }
 
-function formatDate(iso) {
-  if (!iso) return "";
-  const date = new Date(`${iso}T12:00:00`);
+function parseDate(value) {
+  if (!value) return null;
+  const text = value.trim();
+  const iso = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(text);
+  const us = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(text);
+  const parts = iso ? [iso[1], iso[2], iso[3]] : us ? [us[3], us[1], us[2]] : null;
+  if (!parts) return null;
+  const date = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]), 12);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function formatDate(value) {
+  const date = parseDate(value);
+  if (!date) return "";
   return date.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
 }
 
@@ -124,7 +146,6 @@ function videoFrame(sermon, eager) {
 function metaRow(sermon) {
   const items = [
     ["i-calendar", formatDate(sermon.date)],
-    ["i-user", sermon.speaker],
     ["i-book", sermon.scripture],
   ].filter(([, text]) => text);
   if (!items.length) return null;
@@ -143,7 +164,9 @@ function renderSermons() {
   const archiveWrap = document.getElementById("sermon-archive");
   if (!featuredWrap || !Array.isArray(window.SERMONS)) return;
 
-  const sermons = [...window.SERMONS].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+  const sermons = [...window.SERMONS].sort(
+    (a, b) => (parseDate(b.date)?.getTime() || 0) - (parseDate(a.date)?.getTime() || 0)
+  );
   const [latest, ...past] = sermons;
 
   if (latest) {
