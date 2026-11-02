@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sermons · The Woods Church</title>
+    <meta name="description" content="Watch recent Sunday messages from The Woods Church in Stanwood, Michigan." />
+    <meta name="theme-color" content="#15522f" />
+    <link rel="icon" type="image/png" href="assets/favicon.png" />
+    <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Outfit:wght@400;500;600&display=swap" />
+    <link rel="stylesheet" href="css/styles.css" />
+    <script>document.documentElement.classList.add("js");</script>
+  </head>
+  <body>
+    <!-- @include partials/icons.html -->
+
+    <div class="site tone-night">
+      <!-- @include partials/header.html -->
+
+      <main id="main">
+        <section class="page-hero">
+          <img class="page-hero__bg" src="assets/photos/web/pastor-teaching-1200.jpg" srcset="assets/photos/web/pastor-teaching-1200.jpg 900w, assets/photos/web/pastor-teaching-2400.jpg 1800w" sizes="100vw" alt="" style="--pos: 50% 30%" />
+          <div class="container page-hero__inner">
+            <p class="eyebrow">Sermons</p>
+            <h1>Messages from Sunday mornings</h1>
+            <p class="lede">Watch the latest sermon from The Woods, or go back and catch one you missed.</p>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="container">
+            <div class="featured reveal" id="sermon-featured"></div>
+          </div>
+        </section>
+
+        <section class="section tone-dusk">
+          <div class="container">
+            <div class="sec-head reveal">
+              <p class="eyebrow">Past sermons</p>
+              <h2 class="h2">Catch up on recent weeks</h2>
+            </div>
+            <div class="reveal" id="sermon-archive"></div>
+          </div>
+        </section>
+
+        <section class="section tone-cream">
+          <div class="container split">
+            <div class="split__text reveal">
+              <p class="eyebrow">Watch live</p>
+              <h2 class="h2">Join us live on Sunday mornings</h2>
+              <p class="lede">Sunday services stream live on our Facebook page. Better yet, come see us in person — we’ll save you a seat.</p>
+              <div class="actions">
+                <a class="btn btn--primary" href="https://www.facebook.com/100081895544129" target="_blank" rel="noopener noreferrer"><svg class="icon" aria-hidden="true"><use href="#i-video" /></svg>Watch on Facebook</a>
+                <a class="btn btn--ghost" href="visit.html">Plan a Visit</a>
+              </div>
+            </div>
+            <div class="photo-frame reveal" style="--d: 120ms">
+              <img src="assets/photos/web/worship-praise-1200.jpg" srcset="assets/photos/web/worship-praise-1200.jpg 900w, assets/photos/web/worship-praise-2400.jpg 1800w" sizes="(min-width: 900px) 36rem, 100vw" alt="A worship leader singing during the Sunday service" width="900" height="1200" loading="lazy" style="object-position: 50% 40%" />
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <!-- @include partials/footer.html -->
+    </div>
+    <script src="js/sermons.js"></script>
+    <script src="js/main.js"></script>
+  </body>
+</html>

@@ -1,89 +1,195 @@
-const themes = {
-  dark: {
-    label: "Dark",
-    blurb: "Dusk tones and cream type over full-bleed forest photography.",
-  },
-  light: {
-    label: "Light",
-    blurb: "Warm paper backgrounds with the primary color as the accent.",
-  },
-  contrasting: {
-    label: "Contrasting",
-    blurb: "Bold primary panels against cream, with maple highlights.",
-  },
-};
+const site = document.querySelector(".site");
+const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-const primaries = [
-  { id: "forest", name: "Forest", note: "Logo green", hex: "#15522f" },
-  { id: "evergreen", name: "Evergreen", note: "Deep pine teal", hex: "#1b5450" },
-  { id: "sage", name: "Sage", note: "Soft & earthy", hex: "#55704e" },
-  { id: "lake", name: "Lake", note: "Michigan blue", hex: "#1f4a6e" },
-  { id: "cedar", name: "Cedar", note: "Warm red-brown", hex: "#7c3a24" },
-];
+/* ——— Nav ——— */
 
-const PAGES = ["home", "about", "contact", "give"];
-const STORE_KEY = "woods-primary";
+const navToggle = document.querySelector(".nav__toggle");
 
-const panels = document.querySelectorAll("[data-theme-panel]");
-const themeButtons = document.querySelectorAll(".seg button");
-const meta = document.getElementById("theme-meta");
-const swatchWrap = document.getElementById("swatches");
-const swatchName = document.getElementById("swatch-name");
-const dock = document.querySelector(".dock");
+const navLabel = navToggle?.querySelector(".nav__label");
 
-const aliases = { trailhead: "dark", invitation: "light", clearing: "contrasting" };
+function setNavOpen(open) {
+  navToggle?.setAttribute("aria-expanded", String(open));
+  if (navLabel) navLabel.textContent = open ? "Close" : "Menu";
+  site.classList.toggle("is-nav-open", open);
+}
 
-let current = { theme: "dark", page: "home", primary: "forest" };
+navToggle?.addEventListener("click", () => {
+  setNavOpen(navToggle.getAttribute("aria-expanded") !== "true");
+});
 
-function storedPrimary() {
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && site.classList.contains("is-nav-open")) {
+    setNavOpen(false);
+    navToggle.focus();
+  }
+});
+
+window.matchMedia("(min-width: 1041px)").addEventListener("change", (e) => {
+  if (e.matches) setNavOpen(false);
+});
+
+function updateScrolled() {
+  site.classList.toggle("is-scrolled", window.scrollY > 8);
+}
+
+window.addEventListener("scroll", updateScrolled, { passive: true });
+updateScrolled();
+
+/* ——— Hero slideshow ——— */
+
+const SLIDE_MS = 7000;
+
+function initSlideshow(hero) {
+  const slides = [...hero.querySelectorAll(".hero__slide")];
+  if (slides.length < 2) return;
+
+  let index = 0;
+  let timer = 0;
+
+  function show(i) {
+    index = (i + slides.length) % slides.length;
+    slides.forEach((slide, n) => {
+      slide.classList.toggle("is-active", n === index);
+      slide.classList.toggle("is-zooming", n === index);
+    });
+  }
+
+  function schedule() {
+    clearTimeout(timer);
+    if (reducedMotion || document.hidden) return;
+    timer = setTimeout(() => {
+      show(index + 1);
+      schedule();
+    }, SLIDE_MS);
+  }
+
+  document.addEventListener("visibilitychange", schedule);
+
+  /* Flush the unzoomed first frame so its zoom transitions in */
+  void hero.offsetWidth;
+  show(0);
+  schedule();
+}
+
+const hero = document.querySelector(".hero");
+if (hero) initSlideshow(hero);
+
+/* ——— Sermons ——— */
+
+const FB_PAGE = "https://www.facebook.com/100081895544129";
+
+/* Accepts a Facebook video link, an embed src, or a full <iframe> embed code */
+function facebookVideoUrl(input) {
+  const src = input.match(/src="([^"]+)"/)?.[1]?.replace(/&amp;/g, "&") || input.trim();
   try {
-    return localStorage.getItem(STORE_KEY);
+    const url = new URL(src);
+    return url.pathname.includes("/plugins/video.php") ? url.searchParams.get("href") : url.href;
   } catch {
-    return null;
+    return src;
   }
 }
 
-function parseHash() {
-  const raw = location.hash.replace(/^#/, "") || "dark/home";
-  const [themePart, pagePart, colorPart] = raw.split("/");
-  const resolved = aliases[themePart] || themePart;
-  const theme = themes[resolved] ? resolved : "dark";
-  const page = PAGES.includes(pagePart) ? pagePart : "home";
-  const fallback = storedPrimary() || current.primary;
-  const primary = primaries.some((p) => p.id === colorPart) ? colorPart : fallback;
-  return { theme, page, primary };
+function embedSrc(video) {
+  const params = new URLSearchParams({ href: facebookVideoUrl(video), show_text: "false", t: "0" });
+  return `https://www.facebook.com/plugins/video.php?${params}`;
 }
 
-/* ——— Primary color ——— */
+function formatDate(iso) {
+  if (!iso) return "";
+  const date = new Date(`${iso}T12:00:00`);
+  return date.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+}
 
-primaries.forEach((p) => {
-  const btn = document.createElement("button");
-  btn.type = "button";
-  btn.className = "swatch";
-  btn.setAttribute("role", "radio");
-  btn.setAttribute("aria-label", `${p.name} — ${p.note}`);
-  btn.title = `${p.name} · ${p.note}`;
-  btn.dataset.primary = p.id;
-  btn.style.setProperty("--c", p.hex);
-  btn.addEventListener("click", () => setRoute({ ...current, primary: p.id }));
-  swatchWrap.append(btn);
-});
+function el(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text) node.textContent = text;
+  return node;
+}
 
-function applyPrimary(id) {
-  const p = primaries.find((x) => x.id === id) || primaries[0];
-  document.documentElement.style.setProperty("--primary", p.hex);
-  swatchWrap.querySelectorAll(".swatch").forEach((s) => {
-    s.setAttribute("aria-checked", String(s.dataset.primary === p.id));
+function videoFrame(sermon, eager) {
+  const wrap = el("div", "video");
+  if (sermon.aspect) wrap.style.aspectRatio = sermon.aspect;
+  const iframe = document.createElement("iframe");
+  iframe.src = embedSrc(sermon.video);
+  iframe.title = sermon.title ? `Sermon video: ${sermon.title}` : "Sermon video";
+  iframe.allow = "autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share";
+  iframe.allowFullscreen = true;
+  iframe.scrolling = "no";
+  if (!eager) iframe.loading = "lazy";
+  wrap.append(iframe);
+  return wrap;
+}
+
+function metaRow(sermon) {
+  const items = [
+    ["i-calendar", formatDate(sermon.date)],
+    ["i-user", sermon.speaker],
+    ["i-book", sermon.scripture],
+  ].filter(([, text]) => text);
+  if (!items.length) return null;
+  const row = el("p", "sermon-meta");
+  items.forEach(([icon, text]) => {
+    const span = el("span");
+    span.innerHTML = `<svg class="icon" aria-hidden="true"><use href="#${icon}" /></svg>`;
+    span.append(text);
+    row.append(span);
   });
-  swatchName.innerHTML = `${p.name}<small>${p.note}</small>`;
-  try {
-    localStorage.setItem(STORE_KEY, p.id);
-  } catch {}
+  return row;
 }
 
-/* ——— Motion ——— */
+function renderSermons() {
+  const featuredWrap = document.getElementById("sermon-featured");
+  const archiveWrap = document.getElementById("sermon-archive");
+  if (!featuredWrap || !Array.isArray(window.SERMONS)) return;
 
-const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const sermons = [...window.SERMONS].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+  const [latest, ...past] = sermons;
+
+  if (latest) {
+    const details = el("div", "featured__details");
+    details.append(el("p", "eyebrow", "Latest message"));
+    details.append(el("h2", "featured__title", latest.title || "Sunday message"));
+    const latestMeta = metaRow(latest);
+    if (latestMeta) details.append(latestMeta);
+    if (latest.summary) details.append(el("p", "lede", latest.summary));
+    const link = el("a", "text-link", "Watch on Facebook");
+    link.href = facebookVideoUrl(latest.video);
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.insertAdjacentHTML("beforeend", '<svg class="icon" aria-hidden="true"><use href="#i-arrow" /></svg>');
+    details.append(link);
+    featuredWrap.replaceChildren(videoFrame(latest, true), details);
+  }
+
+  if (!archiveWrap) return;
+  if (!past.length) {
+    const note = el("div", "empty-note");
+    note.append(el("p", "", "More messages are on the way. In the meantime, you can find past services on our Facebook page."));
+    const link = el("a", "text-link", "Visit our Facebook page");
+    link.href = FB_PAGE;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    note.append(link);
+    archiveWrap.replaceChildren(note);
+    return;
+  }
+
+  const grid = el("div", "sermon-grid");
+  past.forEach((sermon) => {
+    const card = el("article", "sermon-card");
+    card.append(videoFrame(sermon, false));
+    card.append(el("h3", "", sermon.title || "Sunday message"));
+    const meta = metaRow(sermon);
+    if (meta) card.append(meta);
+    grid.append(card);
+  });
+  archiveWrap.replaceChildren(grid);
+}
+
+renderSermons();
+
+/* ——— Scroll reveals ——— */
 
 const revealObserver =
   "IntersectionObserver" in window && !reducedMotion
@@ -91,344 +197,35 @@ const revealObserver =
         (entries) => {
           entries.forEach((entry) => {
             if (!entry.isIntersecting) return;
-            const el = entry.target;
-            el.classList.add("is-in");
-            revealObserver.unobserve(el);
-            const delay = parseInt(el.style.getPropertyValue("--d"), 10) || 0;
-            setTimeout(() => el.classList.remove("reveal", "is-in"), 1100 + delay);
+            entry.target.classList.add("is-in");
+            revealObserver.unobserve(entry.target);
           });
         },
-        { threshold: 0.15, rootMargin: "0px 0px -6% 0px" }
+        { threshold: 0.12, rootMargin: "0px 0px -5% 0px" }
       )
     : null;
 
-function observeReveals(root) {
-  root.querySelectorAll(".reveal:not(.is-in)").forEach((el) => {
-    if (revealObserver) revealObserver.observe(el);
-    else el.classList.remove("reveal");
-  });
-}
-
-function restartMotion(root) {
-  root
-    .querySelectorAll(
-      ".d-hero__content > *, .l-hero__text > *, .l-hero__media, .c-hero__panel-inner > *, .page-hero__inner > *, .page-head__inner > *"
-    )
-    .forEach((el) => {
-      el.style.animation = "none";
-      void el.offsetWidth;
-      el.style.animation = "";
-    });
-}
-
-function updateScrolled() {
-  const active = document.getElementById(`c-${current.theme}`);
-  active?.classList.toggle("is-scrolled", window.scrollY > 24);
-}
-
-/* ——— Routing ——— */
-
-function closeMenus() {
-  document.querySelectorAll(".nav__toggle").forEach((btn) => btn.setAttribute("aria-expanded", "false"));
-  document.querySelectorAll(".site").forEach((site) => site.classList.remove("is-nav-open"));
-}
-
-function setRoute(next, { push = false } = {}) {
-  const changedView = next.theme !== current.theme || next.page !== current.page;
-  current = next;
-  const { theme, page, primary } = next;
-
-  applyPrimary(primary);
-
-  panels.forEach((panel) => {
-    const match = panel.id === `c-${theme}`;
-    panel.hidden = !match;
-    if (!match) return;
-
-    panel.dataset.page = page;
-    panel.querySelectorAll("[data-page-view]").forEach((view) => {
-      view.hidden = view.getAttribute("data-page-view") !== page;
-    });
-    panel.querySelectorAll("[data-nav]").forEach((link) => {
-      const active = link.getAttribute("data-nav") === page;
-      link.classList.toggle("is-active", active);
-      if (active) link.setAttribute("aria-current", "page");
-      else link.removeAttribute("aria-current");
-    });
-  });
-
-  themeButtons.forEach((btn) => {
-    btn.setAttribute("aria-pressed", String(btn.dataset.theme === theme));
-  });
-
-  const info = themes[theme];
-  if (meta && info) meta.innerHTML = `<strong>${info.label}</strong> — ${info.blurb}`;
-
-  const hash = `#${theme}/${page}/${primary}`;
-  if (push) history.pushState(null, "", hash);
-  else history.replaceState(null, "", hash);
-
-  if (changedView) {
-    closeMenus();
-    const active = document.getElementById(`c-${theme}`);
-    window.scrollTo({ top: 0, behavior: "instant" });
-    restartMotion(active);
-    observeReveals(active);
-    /* Tip 3 keeps the mobile menu open so the highlight still fits */
-    if (typeof tourStep === "number" && tourStep >= 0 && steps[tourStep]?.openNav) {
-      setMobileNavOpen(true);
-    }
-  }
-  updateScrolled();
-}
-
-function applyFromLocation() {
-  setRoute(parseHash());
-}
-
-themeButtons.forEach((btn) => {
-  btn.addEventListener("click", () => {
-    setRoute({ ...current, theme: btn.dataset.theme }, { push: true });
-  });
+document.querySelectorAll(".reveal").forEach((node) => {
+  if (revealObserver) revealObserver.observe(node);
+  else node.classList.remove("reveal");
 });
 
-document.querySelectorAll(".nav__toggle").forEach((btn) => {
-  btn.addEventListener("click", () => {
-    const site = btn.closest(".site");
-    const open = btn.getAttribute("aria-expanded") === "true";
-    btn.setAttribute("aria-expanded", String(!open));
-    site?.classList.toggle("is-nav-open", !open);
-  });
+/* ——— Contact form ——— */
+
+const contactForm = document.querySelector("form.form");
+contactForm?.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const data = new FormData(contactForm);
+  const name = String(data.get("name") || "").trim();
+  const email = String(data.get("email") || "").trim();
+  const message = String(data.get("message") || "").trim();
+  const subject = `Note from the website${name ? ` — ${name}` : ""}`;
+  const body = [message, "", name && `Name: ${name}`, email && `Email: ${email}`].filter(Boolean).join("\n");
+  window.location.href = `mailto:office@thewoodsfmc.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 });
 
-document.querySelectorAll(".scroll-cue").forEach((cue) => {
-  cue.addEventListener("click", (e) => {
-    e.preventDefault();
-    const target = document.getElementById(cue.getAttribute("href").slice(1));
-    target?.scrollIntoView({ behavior: "smooth" });
-  });
+/* ——— Footer year ——— */
+
+document.querySelectorAll("[data-year]").forEach((node) => {
+  node.textContent = new Date().getFullYear();
 });
-
-/* Placeholder CTAs (e.g. Give online) — don't clear the hash / switch themes */
-document.addEventListener("click", (e) => {
-  const noop = e.target.closest("[data-noop]");
-  if (!noop) return;
-  e.preventDefault();
-});
-
-/* ——— Dock ——— */
-
-function setDockMin(min) {
-  dock.classList.toggle("is-min", min);
-}
-
-const dockHide = dock.querySelector(".dock__min:not(.dock__help)");
-const dockOpen = dock.querySelector(".dock__open");
-
-dockHide.addEventListener("click", () => setDockMin(true));
-dockOpen.addEventListener("click", () => setDockMin(false));
-
-document.addEventListener("keydown", (e) => {
-  if (e.target.closest("input, textarea")) return;
-  if (e.key === "h" || e.key === "H") setDockMin(!dock.classList.contains("is-min"));
-});
-
-/* ——— Guided tips ——— */
-
-const TOUR_KEY = "woods-tour-done";
-const tour = document.getElementById("tour");
-const ring = document.getElementById("tour-ring");
-const tourCount = document.getElementById("tour-count");
-const tourTitle = document.getElementById("tour-title");
-const tourText = document.getElementById("tour-text");
-const tourTry = document.getElementById("tour-try");
-const tourDots = document.getElementById("tour-dots");
-const tourBack = tour.querySelector(".tour__back");
-const tourNext = tour.querySelector(".tour__next");
-const tourNextLabel = document.getElementById("tour-next-label");
-
-const isShown = (el) => {
-  if (!el) return false;
-  const r = el.getBoundingClientRect();
-  return r.width > 0 && r.height > 0;
-};
-
-const activeSite = () => document.getElementById(`c-${current.theme}`);
-
-const steps = [
-  {
-    title: "Switch between the 3 directions",
-    text: "These buttons flip the whole site between <strong>Dark</strong>, <strong>Light</strong>, and <strong>Contrasting</strong>.",
-    try: "Try it — pick a different direction now.",
-    target: () => dock.querySelector(".seg"),
-    openDock: true,
-  },
-  {
-    title: "Try a primary color",
-    text: "Tap a dot to recolor the site. Your color stays put as you switch directions, so you can compare them side by side.",
-    try: "Try it — tap a color, then switch directions.",
-    target: () => dock.querySelector(".swatches"),
-    openDock: true,
-  },
-  {
-    title: "Explore the pages",
-    text: "Use the menu at the top of each design to visit <strong>Home</strong>, <strong>About</strong>, <strong>Contact</strong>, and <strong>Give</strong>.",
-    try: "Try it — open another page.",
-    openNav: true,
-    target: () => {
-      const site = activeSite();
-      if (!site) return null;
-      const toggle = site.querySelector(".nav__toggle");
-      const menu = site.querySelector(".nav__menu");
-      const links = site.querySelector(".nav__links");
-      /* Mobile: wrap the open dropdown panel; otherwise the hamburger */
-      if (toggle && getComputedStyle(toggle).display !== "none") {
-        return isShown(menu) ? menu : toggle;
-      }
-      return links;
-    },
-  },
-  {
-    title: "Hide or show the controls",
-    text: "Tap the <strong>arrow</strong> to tuck this bar away for a clean view. Tap <strong>Review options</strong> to bring it back. Keyboard: <kbd>H</kbd>.",
-    try: "Try it — hide the bar, then bring it back.",
-    target: () => (dock.classList.contains("is-min") ? dockOpen : dockHide),
-  },
-];
-
-let tourStep = -1;
-let tourFrame = 0;
-
-tourDots.innerHTML = steps.map(() => "<i></i>").join("");
-
-function setMobileNavOpen(open) {
-  const site = activeSite();
-  if (!site) return;
-  const toggle = site.querySelector(".nav__toggle");
-  if (!toggle || getComputedStyle(toggle).display === "none") return;
-  toggle.setAttribute("aria-expanded", String(open));
-  site.classList.toggle("is-nav-open", open);
-}
-
-function placeTour() {
-  if (tourStep < 0) return;
-  const target = steps[tourStep].target();
-  if (!isShown(target)) {
-    tourFrame = requestAnimationFrame(placeTour);
-    return;
-  }
-
-  const r = target.getBoundingClientRect();
-  const pad = 8;
-  ring.style.top = `${r.top - pad}px`;
-  ring.style.left = `${r.left - pad}px`;
-  ring.style.width = `${r.width + pad * 2}px`;
-  ring.style.height = `${r.height + pad * 2}px`;
-  /* Tall panels (mobile menu) need a modest radius — pill math turns them into ovals */
-  const isBlock = r.height > 72;
-  ring.style.borderRadius = isBlock
-    ? `${Math.min(18, r.width / 2 + pad)}px`
-    : `${Math.min(r.height / 2 + pad, 999)}px`;
-
-  const gap = 16;
-  const margin = 12;
-  const w = tour.offsetWidth;
-  const h = tour.offsetHeight;
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
-
-  const fitsAbove = r.top - gap - h >= margin;
-  const preferBelow = r.top + r.height / 2 < vh / 2;
-  const side = preferBelow || !fitsAbove ? "bottom" : "top";
-  const top = side === "top" ? r.top - gap - h : r.bottom + gap;
-
-  const cx = r.left + r.width / 2;
-  const left = Math.max(margin, Math.min(cx - w / 2, vw - w - margin));
-  const arrowX = Math.max(18, Math.min(cx - left, w - 18));
-
-  tour.dataset.side = side;
-  tour.style.setProperty("--tour-shift", side === "top" ? "8px" : "-8px");
-  tour.style.top = `${top}px`;
-  tour.style.left = `${left}px`;
-  tour.style.setProperty("--arrow-x", `${arrowX}px`);
-
-  tourFrame = requestAnimationFrame(placeTour);
-}
-
-function showStep(i) {
-  tourStep = i;
-  const step = steps[i];
-  if (step.openDock) setDockMin(false);
-  setMobileNavOpen(Boolean(step.openNav));
-
-  tourCount.textContent = `Tip ${i + 1} of ${steps.length}`;
-  tourTitle.textContent = step.title;
-  tourText.innerHTML = step.text;
-  tourTry.textContent = step.try || "";
-  tourBack.disabled = i === 0;
-  tourNextLabel.textContent = i === steps.length - 1 ? "Done" : "Next";
-  tourDots.querySelectorAll("i").forEach((d, n) => d.classList.toggle("is-on", n === i));
-
-  const wasHidden = tour.hidden;
-  tour.hidden = false;
-  ring.hidden = false;
-  tour.classList.remove("is-entering");
-  void tour.offsetWidth;
-  tour.classList.add("is-entering");
-
-  cancelAnimationFrame(tourFrame);
-  if (wasHidden) {
-    tour.style.transition = ring.style.transition = "none";
-    placeTour();
-    void tour.offsetWidth;
-    tour.style.transition = ring.style.transition = "";
-  } else {
-    placeTour();
-  }
-}
-
-function startTour() {
-  showStep(0);
-  tourNext.focus({ preventScroll: true });
-}
-
-function endTour() {
-  tourStep = -1;
-  cancelAnimationFrame(tourFrame);
-  tour.hidden = true;
-  ring.hidden = true;
-  setMobileNavOpen(false);
-  try {
-    localStorage.setItem(TOUR_KEY, "1");
-  } catch {}
-}
-
-tourNext.addEventListener("click", () => {
-  if (tourStep >= steps.length - 1) endTour();
-  else showStep(tourStep + 1);
-});
-
-tourBack.addEventListener("click", () => {
-  if (tourStep > 0) showStep(tourStep - 1);
-});
-
-tour.querySelector(".tour__close").addEventListener("click", endTour);
-
-document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape" && tourStep >= 0) endTour();
-});
-
-dock.querySelector(".dock__help").addEventListener("click", startTour);
-
-let tourDone = false;
-try {
-  tourDone = localStorage.getItem(TOUR_KEY) === "1";
-} catch {}
-if (!tourDone) setTimeout(startTour, 700);
-
-window.addEventListener("scroll", updateScrolled, { passive: true });
-window.addEventListener("hashchange", applyFromLocation);
-window.addEventListener("popstate", applyFromLocation);
-
-current = { ...parseHash(), theme: "" };
-applyFromLocation();
