@@ -159,34 +159,108 @@ function metaRow(sermon) {
   return row;
 }
 
+function sermonTime(sermon) {
+  return parseDate(sermon.date)?.getTime() || 0;
+}
+
+function seriesSlug(title, used) {
+  const base = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "series";
+  let slug = base;
+  let n = 2;
+  while (used.has(slug)) slug = `${base}-${n++}`;
+  used.add(slug);
+  return slug;
+}
+
+function prepareSeries(list) {
+  const used = new Set();
+  return list
+    .map((item) => ({
+      title: item.title || "Sermon series",
+      summary: item.summary || "",
+      slug: seriesSlug(item.title || "Sermon series", used),
+      sermons: [...(item.sermons || [])].filter((sermon) => sermon.video).sort((a, b) => sermonTime(b) - sermonTime(a)),
+    }))
+    .filter((item) => item.sermons.length)
+    .sort((a, b) => sermonTime(b.sermons[0]) - sermonTime(a.sermons[0]));
+}
+
+function latestSermon(series) {
+  let found = null;
+  series.forEach((item) => {
+    item.sermons.forEach((sermon) => {
+      if (!found || sermonTime(sermon) >= sermonTime(found.sermon)) found = { sermon, series: item };
+    });
+  });
+  return found;
+}
+
+function formatRange(sermons) {
+  const dates = sermons.map((sermon) => parseDate(sermon.date)).filter(Boolean).sort((a, b) => a - b);
+  const start = dates[0];
+  const end = dates.at(-1);
+  if (!start) return "";
+  if (!end || start.getTime() === end.getTime()) return formatDate(sermons[0].date);
+  const sameYear = start.getFullYear() === end.getFullYear();
+  const startText = start.toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    ...(sameYear ? {} : { year: "numeric" }),
+  });
+  const endText = end.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+  return `${startText} – ${endText}`;
+}
+
+function messageCount(count) {
+  return count === 1 ? "1 message" : `${count} messages`;
+}
+
+function facebookLink(video) {
+  const link = el("a", "text-link", "Watch on Facebook");
+  link.href = facebookVideoUrl(video);
+  link.target = "_blank";
+  link.rel = "noopener noreferrer";
+  link.insertAdjacentHTML("beforeend", '<svg class="icon" aria-hidden="true"><use href="#i-arrow" /></svg>');
+  return link;
+}
+
+function writeSeriesIntro(series) {
+  const intro = document.getElementById("series-intro");
+  const current = series[0];
+  if (!intro || !current || intro.dataset.ready) return;
+  intro.dataset.ready = "true";
+  const name = document.createElement("em");
+  name.textContent = current.title;
+  intro.append(document.createTextNode(" Right now we’re in "), name, document.createTextNode("."));
+}
+
 function renderSermons() {
   const featuredWrap = document.getElementById("sermon-featured");
-  const archiveWrap = document.getElementById("sermon-archive");
-  if (!featuredWrap || !Array.isArray(window.SERMONS)) return;
+  const seriesWrap = document.getElementById("sermon-series");
+  if (!featuredWrap || !Array.isArray(window.SERIES)) return;
 
-  const sermons = [...window.SERMONS].sort(
-    (a, b) => (parseDate(b.date)?.getTime() || 0) - (parseDate(a.date)?.getTime() || 0)
-  );
-  const [latest, ...past] = sermons;
+  const series = prepareSeries(window.SERIES);
+  const latest = latestSermon(series);
+  writeSeriesIntro(series);
 
   if (latest) {
     const details = el("div", "featured__details");
     details.append(el("p", "eyebrow", "Latest message"));
-    details.append(el("h2", "featured__title", latest.title || "Sunday message"));
-    const latestMeta = metaRow(latest);
+    const seriesLink = el("a", "", latest.series.title);
+    seriesLink.href = `#${latest.series.slug}`;
+    const seriesLine = el("p", "sermon-series-link");
+    seriesLine.append(seriesLink);
+    details.append(seriesLine);
+    details.append(el("h2", "featured__title", latest.sermon.title || "Sunday message"));
+    const latestMeta = metaRow(latest.sermon);
     if (latestMeta) details.append(latestMeta);
-    if (latest.summary) details.append(el("p", "lede", latest.summary));
-    const link = el("a", "text-link", "Watch on Facebook");
-    link.href = facebookVideoUrl(latest.video);
-    link.target = "_blank";
-    link.rel = "noopener noreferrer";
-    link.insertAdjacentHTML("beforeend", '<svg class="icon" aria-hidden="true"><use href="#i-arrow" /></svg>');
-    details.append(link);
-    featuredWrap.replaceChildren(videoFrame(latest, true), details);
+    if (latest.sermon.summary) details.append(el("p", "lede", latest.sermon.summary));
+    details.append(facebookLink(latest.sermon.video));
+    featuredWrap.replaceChildren(videoFrame(latest.sermon, true), details);
   }
 
-  if (!archiveWrap) return;
-  if (!past.length) {
+  if (!seriesWrap) return;
+  if (!series.length) {
     const note = el("div", "empty-note");
     note.append(el("p", "", "More messages are on the way. In the meantime, you can find past services on our Facebook page."));
     const link = el("a", "text-link", "Visit our Facebook page");
@@ -194,20 +268,52 @@ function renderSermons() {
     link.target = "_blank";
     link.rel = "noopener noreferrer";
     note.append(link);
-    archiveWrap.replaceChildren(note);
+    seriesWrap.replaceChildren(note);
     return;
   }
 
-  const grid = el("div", "sermon-grid");
-  past.forEach((sermon) => {
-    const card = el("article", "sermon-card");
-    card.append(videoFrame(sermon, false));
-    card.append(el("h3", "", sermon.title || "Sunday message"));
-    const meta = metaRow(sermon);
-    if (meta) card.append(meta);
-    grid.append(card);
+  const fragment = document.createDocumentFragment();
+  if (series.length > 1) {
+    const nav = el("nav", "series-nav");
+    nav.setAttribute("aria-label", "Sermon series");
+    series.forEach((item) => {
+      const link = el("a", "", item.title);
+      link.href = `#${item.slug}`;
+      if (latest && item.slug === latest.series.slug) link.setAttribute("aria-current", "true");
+      nav.append(link);
+    });
+    fragment.append(nav);
+  }
+
+  series.forEach((item) => {
+    const article = el("article", "series");
+    article.id = item.slug;
+    const title = el("h3", "series__title", item.title);
+    title.id = `${item.slug}-title`;
+    article.setAttribute("aria-labelledby", title.id);
+    const head = el("header", "series__head");
+    head.append(title);
+    const metaBits = [messageCount(item.sermons.length), formatRange(item.sermons)].filter(Boolean);
+    if (metaBits.length) head.append(el("p", "series__meta", metaBits.join(" · ")));
+    if (item.summary) head.append(el("p", "lede", item.summary));
+    article.append(head);
+
+    const grid = el("div", "sermon-grid");
+    item.sermons.forEach((sermon) => {
+      const card = el("article", "sermon-card");
+      card.append(videoFrame(sermon, false));
+      const body = el("div", "sermon-card__body");
+      if (latest && sermon === latest.sermon) body.append(el("p", "sermon-flag", "Latest"));
+      body.append(el("h4", "", sermon.title || "Sunday message"));
+      const meta = metaRow(sermon);
+      if (meta) body.append(meta);
+      card.append(body);
+      grid.append(card);
+    });
+    article.append(grid);
+    fragment.append(article);
   });
-  archiveWrap.replaceChildren(grid);
+  seriesWrap.replaceChildren(fragment);
 }
 
 renderSermons();
