@@ -56,17 +56,4 @@ window.SERIES = [
       },
     ],
   },
-  {
-    title: "In Jesus' steps",
-    summary: "",
-    sermons: [
-      {
-        title: "Sunday Message",
-        date: "2026-10-4",
-        scripture: "2 Kings 22-23",
-        summary: "",
-        video: "https://www.facebook.com/100081895544129/videos/1344319757586096/",
-      },
-    ],
-  },
 ];
