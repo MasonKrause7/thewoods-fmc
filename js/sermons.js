@@ -43,7 +43,7 @@ window.SERIES = [
       {
         title: "The Authority of Scripture",
         date: "10/18/2026",
-        scripture: "",
+        scripture: "Hebrews 4:12",
         summary: "",
         video: "https://www.facebook.com/100081895544129/videos/2231419730740480/",
       },
