@@ -2126,9 +2126,19 @@ p {
   }
 }
 
+.footer__brand a {
+  display: inline-block;
+  border: 0;
+}
+
 .footer__brand .logo {
   width: 8.5rem;
   color: var(--cream);
+  transition: opacity 0.3s var(--ease);
+}
+
+.footer__brand a:hover .logo {
+  opacity: 0.8;
 }
 
 .footer__col h3 {
