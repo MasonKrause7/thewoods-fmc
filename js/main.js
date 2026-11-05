@@ -95,13 +95,15 @@ function facebookVideoUrl(input) {
   return url.pathname.includes("/plugins/video.php") ? url.searchParams.get("href") : url.href;
 }
 
+/* Only pass a start time when one is set; Facebook's player can pause itself
+   right after it starts while handling a start offset. */
 function embedSrc(video) {
   const start = facebookInputUrl(video)?.searchParams.get("t");
   const params = new URLSearchParams({
     href: facebookVideoUrl(video),
     show_text: "false",
-    t: start && /^\d+$/.test(start) ? start : "0",
   });
+  if (start && /^\d+$/.test(start) && Number(start) > 0) params.set("t", start);
   return `https://www.facebook.com/plugins/video.php?${params}`;
 }
 

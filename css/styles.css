@@ -1812,11 +1812,12 @@ p {
 
 .sermon-card {
   display: grid;
-  gap: 1rem;
+  gap: 1.4rem;
   align-content: start;
 }
 
 .sermon-card__body {
+  position: relative;
   display: grid;
   gap: 0.35rem;
 }
@@ -1829,9 +1830,14 @@ p {
   line-height: 1.15;
 }
 
+/* Sits in the gap above the title so every card's title lines up */
 .sermon-flag {
+  position: absolute;
+  bottom: calc(100% + 0.3rem);
+  left: 0;
   margin: 0;
-  font-size: 0.75rem;
+  line-height: 1;
+  font-size: 0.7rem;
   font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;

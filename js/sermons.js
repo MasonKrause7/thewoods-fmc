@@ -34,14 +34,14 @@ window.SERIES = [
         video: `<iframe src="https://www.facebook.com/plugins/video.php?height=311&href=https%3A%2F%2Fwww.facebook.com%2F100081895544129%2Fvideos%2F1081052084912479%2F&show_text=false&width=560&t=20" width="560" height="311" style="border:none;overflow:hidden" scrolling="no" frameborder="0" allowfullscreen="true" allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share" allowFullScreen="true"></iframe>`,
       },
       {
-        title: "Sunday Message",
+        title: "Our Church Values",
         date: "10/25/2026",
-        scripture: "",
+        scripture: "Mark 2:1-12",
         summary: "",
         video: "https://www.facebook.com/100081895544129/videos/1419285730419829/",
       },
       {
-        title: "Sunday Message",
+        title: "The Authority of Scripture",
         date: "10/18/2026",
         scripture: "",
         summary: "",
