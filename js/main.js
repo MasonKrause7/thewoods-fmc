@@ -342,15 +342,41 @@ document.querySelectorAll(".reveal").forEach((node) => {
 /* ——— Contact form ——— */
 
 const contactForm = document.querySelector("form.form");
-contactForm?.addEventListener("submit", (event) => {
+contactForm?.addEventListener("submit", async (event) => {
   event.preventDefault();
+  const note = contactForm.querySelector(".form__note");
+  const button = contactForm.querySelector("[type='submit']");
   const data = new FormData(contactForm);
+
+  if (data.get("botcheck")) {
+    contactForm.reset();
+    if (note) note.textContent = "Message sent. The church office will get back to you.";
+    return;
+  }
+
   const name = String(data.get("name") || "").trim();
-  const email = String(data.get("email") || "").trim();
-  const message = String(data.get("message") || "").trim();
-  const subject = `Note from the website${name ? ` — ${name}` : ""}`;
-  const body = [message, "", name && `Name: ${name}`, email && `Email: ${email}`].filter(Boolean).join("\n");
-  window.location.href = `mailto:office@thewoodsfmc.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  data.set("subject", `Note from the website${name ? ` — ${name}` : ""}`);
+
+  button.disabled = true;
+  const label = button.textContent;
+  button.textContent = "Sending…";
+
+  try {
+    const response = await fetch(contactForm.action, {
+      method: "POST",
+      headers: { Accept: "application/json" },
+      body: data,
+    });
+    const result = await response.json();
+    if (!response.ok || !result.success) throw new Error(result.message || "Request failed");
+    contactForm.reset();
+    if (note) note.textContent = "Message sent. The church office will get back to you.";
+  } catch {
+    if (note) note.textContent = "That didn’t send. Please try again, or call or email the office.";
+  } finally {
+    button.disabled = false;
+    button.textContent = label;
+  }
 });
 
 /* ——— Footer year ——— */

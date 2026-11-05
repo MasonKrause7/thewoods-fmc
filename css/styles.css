@@ -2008,6 +2008,12 @@ p {
   margin-top: 0.4rem;
 }
 
+.form .btn:disabled {
+  opacity: 0.7;
+  cursor: wait;
+  transform: none;
+}
+
 .form__note {
   margin: 0;
   font-size: 0.95rem;
