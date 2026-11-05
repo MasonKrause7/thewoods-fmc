@@ -20,6 +20,8 @@ def mark_current(html, page):
             1,
         )
     needle = f'<a href="{page}">'
+    if page == "404.html":
+        return html
     if needle not in html:
         raise SystemExit(f"No nav link for {page}")
     return html.replace(needle, f'<a href="{page}" aria-current="page">', 1)
