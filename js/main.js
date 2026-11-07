@@ -78,6 +78,28 @@ if (hero) initSlideshow(hero);
 
 const FB_PAGE = "https://www.facebook.com/100081895544129";
 
+/* Accepts a YouTube link, a YouTube video ID, or a full YouTube <iframe> embed code.
+   Facebook links and embeds still work as a fallback. */
+function youtubeId(input) {
+  const text = String(input).trim();
+  if (/^[\w-]{11}$/.test(text)) return text;
+  const url = facebookInputUrl(text);
+  if (!url) return null;
+  const host = url.hostname.replace(/^www\.|^m\./, "");
+  if (host === "youtu.be") return url.pathname.slice(1).split("/")[0] || null;
+  if (host !== "youtube.com" && host !== "youtube-nocookie.com") return null;
+  if (url.searchParams.get("v")) return url.searchParams.get("v");
+  const match = url.pathname.match(/^\/(?:embed|live|shorts)\/([\w-]{11})/);
+  return match ? match[1] : null;
+}
+
+function youtubeStart(input) {
+  const url = facebookInputUrl(input);
+  const value = url?.searchParams.get("start") || url?.searchParams.get("t") || "";
+  const seconds = parseInt(value, 10);
+  return seconds > 0 ? String(seconds) : null;
+}
+
 /* Accepts a Facebook video link, an embed src, or a full <iframe> embed code.
    A t= value in the embed (t=20) starts playback at that second. */
 function facebookInputUrl(input) {
@@ -98,6 +120,13 @@ function facebookVideoUrl(input) {
 /* Only pass a start time when one is set; Facebook's player can pause itself
    right after it starts while handling a start offset. */
 function embedSrc(video) {
+  const id = youtubeId(video);
+  if (id) {
+    const params = new URLSearchParams({ rel: "0" });
+    const start = youtubeStart(video);
+    if (start) params.set("start", start);
+    return `https://www.youtube-nocookie.com/embed/${id}?${params}`;
+  }
   const start = facebookInputUrl(video)?.searchParams.get("t");
   const params = new URLSearchParams({
     href: facebookVideoUrl(video),
@@ -139,6 +168,7 @@ function videoFrame(sermon, eager) {
   iframe.title = sermon.title ? `Sermon video: ${sermon.title}` : "Sermon video";
   iframe.allow = "autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share";
   iframe.allowFullscreen = true;
+  iframe.referrerPolicy = "strict-origin-when-cross-origin";
   iframe.scrolling = "no";
   if (!eager) iframe.loading = "lazy";
   wrap.append(iframe);
@@ -217,9 +247,10 @@ function messageCount(count) {
   return count === 1 ? "1 message" : `${count} messages`;
 }
 
-function facebookLink(video) {
-  const link = el("a", "text-link", "Watch on Facebook");
-  link.href = facebookVideoUrl(video);
+function watchLink(video) {
+  const id = youtubeId(video);
+  const link = el("a", "text-link", id ? "Watch on YouTube" : "Watch on Facebook");
+  link.href = id ? `https://www.youtube.com/watch?v=${id}` : facebookVideoUrl(video);
   link.target = "_blank";
   link.rel = "noopener noreferrer";
   link.insertAdjacentHTML("beforeend", '<svg class="icon" aria-hidden="true"><use href="#i-arrow" /></svg>');
@@ -257,7 +288,7 @@ function renderSermons() {
     const latestMeta = metaRow(latest.sermon);
     if (latestMeta) details.append(latestMeta);
     if (latest.sermon.summary) details.append(el("p", "lede", latest.sermon.summary));
-    details.append(facebookLink(latest.sermon.video));
+    details.append(watchLink(latest.sermon.video));
     featuredWrap.replaceChildren(videoFrame(latest.sermon, true), details);
   }
 
