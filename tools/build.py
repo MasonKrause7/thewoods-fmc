@@ -7,7 +7,7 @@ from includes import ROOT, render_html
 
 DIST = ROOT / "dist"
 COPY_DIRS = ("css", "js", "assets")
-COPY_FILES = ("robots.txt", "sitemap.xml")
+COPY_FILES = ("robots.txt", "sitemap.xml", "favicon.ico")
 
 
 def main():
