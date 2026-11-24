@@ -24,6 +24,19 @@
 
 window.SERIES = [
   {
+    title: "Church on Mission",
+    summary: "",
+    sermons: [
+      {
+        title: "Vision Sunday",
+        date: "11/22/2026",
+        scripture: "John 20:21",
+        summary: "Pastor Aaron shares the vision for 2027: we are a Church on Mission, sent to reach people here and abroad with the message of Jesus.",
+        video: "https://www.youtube.com/embed/XR6Qt6DNrdw",
+      },
+    ],
+  },
+  {
     title: "This Is Who We Are",
     summary: "",
     sermons: [
